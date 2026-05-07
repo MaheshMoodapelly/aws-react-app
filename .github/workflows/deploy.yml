@@ -1,30 +1,45 @@
 name: Deploy React App to AWS S3
 
+# Trigger workflow
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main   # runs when main branch is pushed
+  workflow_dispatch: # allows manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node.js 22
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
+      # 3️⃣ Cache node modules (faster builds)
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 4️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
 
+      # 5️⃣ Build project
       - name: Build project
         run: npm run build
 
+      # 6️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -32,5 +47,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 7️⃣ Deploy build to S3
       - name: Deploy to S3
-        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
+        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete --acl public-read
+
+      # 8️⃣ Optional: Invalidate CloudFront cache (if using CDN)
+      # - name: Invalidate CloudFront cache
+      #   run: |
+      #     aws cloudfront create-invalidation \
+      #       --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+      #       --paths "/*"
