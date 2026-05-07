@@ -48,9 +48,8 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # 7️⃣ Deploy build to S3
-      - name: Deploy to S3
-        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete --acl public-read
-
+      - - name: Deploy to S3
+          run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
       # 8️⃣ Optional: Invalidate CloudFront cache (if using CDN)
       # - name: Invalidate CloudFront cache
       #   run: |
